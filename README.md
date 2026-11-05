@@ -1,5 +1,3 @@
-markdown
-
 # CSMS Simulator — OCPP 1.6J + Dashboard React
 
 Simulador de um **Charging Station Management System (CSMS)** baseado no protocolo **OCPP 1.6J**, com backend em Node.js, persistência em PostgreSQL e dashboard em React para visualização em tempo real das sessões de recarga.
