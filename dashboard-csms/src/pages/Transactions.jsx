@@ -1,12 +1,32 @@
 import { RefreshCw } from 'lucide-react';
 import { useTransactions } from '../hooks/useTransactions';
 
+// Formata data ISO em formato brasileiro
+function formatarData(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+// Calcula duração entre duas datas
+function formatarDuracao(inicio, fim) {
+  if (!inicio || !fim) return '—';
+  const ms = new Date(fim) - new Date(inicio);
+  const min = Math.floor(ms / 60000);
+  const seg = Math.floor((ms % 60000) / 1000);
+  return `${min}m ${seg}s`;
+}
+
 export default function Transactions() {
-  // pollingMs = 5000 → atualiza a cada 5 segundos
   const { transactions, loading, error, lastUpdated, refresh } = useTransactions(5000);
 
   if (loading && transactions.length === 0) {
-    return <p className="p-6 text-gray-500">Carregando transações...</p>;
+    return <p className="p-6 text-slate-500">Carregando transações...</p>;
   }
   if (error) return <p className="p-6 text-red-500">Erro: {error}</p>;
 
@@ -14,17 +34,17 @@ export default function Transactions() {
     <div>
       <header className="mb-8 flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Transactions</h1>
-          <p className="text-gray-500 mt-1">Histórico de sessões de recarga</p>
+          <h1 className="text-3xl font-bold text-slate-800">Transactions</h1>
+          <p className="text-slate-500 mt-1">Histórico de sessões de recarga</p>
           {lastUpdated && (
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               Atualizado às {lastUpdated.toLocaleTimeString('pt-BR')}
             </p>
           )}
         </div>
         <button
           onClick={refresh}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-medium shadow-sm hover:shadow-md"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           Atualizar
@@ -33,46 +53,60 @@ export default function Transactions() {
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+          <thead className="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider">
             <tr>
-              <th className="px-4 py-3 text-left">ID</th>
-              <th className="px-4 py-3 text-left">Carregador</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-right">Início (Wh)</th>
-              <th className="px-4 py-3 text-right">Fim (Wh)</th>
-              <th className="px-4 py-3 text-right">Consumo (kWh)</th>
+              <th className="px-4 py-3 text-left font-semibold">ID</th>
+              <th className="px-4 py-3 text-left font-semibold">Carregador</th>
+              <th className="px-4 py-3 text-left font-semibold">Status</th>
+              <th className="px-4 py-3 text-left font-semibold">Início</th>
+              <th className="px-4 py-3 text-left font-semibold">Fim</th>
+              <th className="px-4 py-3 text-left font-semibold">Duração</th>
+              <th className="px-4 py-3 text-right font-semibold">Consumo</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-100">
             {transactions.map((tx) => {
               const consumo = tx.meter_stop
-                ? ((tx.meter_stop - tx.meter_start) / 1000).toFixed(2)
+                ? `${((tx.meter_stop - tx.meter_start) / 1000).toFixed(2)} kWh`
                 : '—';
+              const ativa = tx.status === 'Charging';
+
               return (
-                <tr key={tx.transaction_id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono">{tx.transaction_id}</td>
-                  <td className="px-4 py-3">{tx.charge_point_id}</td>
+                <tr
+                  key={tx.transaction_id}
+                  className={`transition-colors ${
+                    ativa ? 'bg-emerald-50/40 hover:bg-emerald-50' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <td className="px-4 py-3 font-mono text-slate-700">#{tx.transaction_id}</td>
+                  <td className="px-4 py-3 font-medium text-slate-800">{tx.charge_point_id}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        tx.status === 'Charging'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-600'
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                        ativa
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-slate-100 text-slate-600'
                       }`}
                     >
+                      {ativa && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      )}
                       {tx.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right">{tx.meter_start}</td>
-                  <td className="px-4 py-3 text-right">{tx.meter_stop ?? '—'}</td>
-                  <td className="px-4 py-3 text-right font-medium">{consumo}</td>
+                  <td className="px-4 py-3 text-slate-600">{formatarData(tx.started_at)}</td>
+                  <td className="px-4 py-3 text-slate-600">{formatarData(tx.ended_at)}</td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {formatarDuracao(tx.started_at, tx.ended_at)}
+                  </td>
+                  <td className="px-4 py-3 text-right font-semibold text-slate-800">{consumo}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
         {transactions.length === 0 && (
-          <p className="p-6 text-center text-gray-500">Nenhuma transação encontrada.</p>
+          <p className="p-6 text-center text-slate-500">Nenhuma transação encontrada.</p>
         )}
       </div>
     </div>
