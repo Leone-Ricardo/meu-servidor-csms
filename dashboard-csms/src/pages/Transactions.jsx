@@ -1,26 +1,34 @@
-import { useEffect, useState } from 'react';
-import { getTransactions } from '../services/api';
+import { RefreshCw } from 'lucide-react';
+import { useTransactions } from '../hooks/useTransactions';
 
 export default function Transactions() {
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // pollingMs = 5000 → atualiza a cada 5 segundos
+  const { transactions, loading, error, lastUpdated, refresh } = useTransactions(5000);
 
-  useEffect(() => {
-    getTransactions()
-      .then((data) => setTransactions(data))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <p className="p-6 text-gray-500">Carregando transações...</p>;
+  if (loading && transactions.length === 0) {
+    return <p className="p-6 text-gray-500">Carregando transações...</p>;
+  }
   if (error) return <p className="p-6 text-red-500">Erro: {error}</p>;
 
   return (
     <div>
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Transactions</h1>
-        <p className="text-gray-500 mt-1">Histórico de sessões de recarga</p>
+      <header className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Transactions</h1>
+          <p className="text-gray-500 mt-1">Histórico de sessões de recarga</p>
+          {lastUpdated && (
+            <p className="text-xs text-gray-400 mt-1">
+              Atualizado às {lastUpdated.toLocaleTimeString('pt-BR')}
+            </p>
+          )}
+        </div>
+        <button
+          onClick={refresh}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+        >
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          Atualizar
+        </button>
       </header>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
