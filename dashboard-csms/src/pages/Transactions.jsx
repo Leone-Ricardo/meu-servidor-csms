@@ -1,4 +1,5 @@
-import { RefreshCw } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { RefreshCw, Search, Filter } from 'lucide-react';
 import { useTransactions } from '../hooks/useTransactions';
 
 // Formata data ISO em formato brasileiro
@@ -22,8 +23,29 @@ function formatarDuracao(inicio, fim) {
   return `${min}m ${seg}s`;
 }
 
+const FILTROS = [
+  { key: 'all', label: 'Todos' },
+  { key: 'Charging', label: 'Em andamento' },
+  { key: 'Finished', label: 'Finalizadas' },
+];
+
 export default function Transactions() {
   const { transactions, loading, error, lastUpdated, refresh } = useTransactions(5000);
+  const [filtroStatus, setFiltroStatus] = useState('all');
+  const [busca, setBusca] = useState('');
+
+  // Aplica filtros em memória (sem refetch)
+  const transacoesFiltradas = useMemo(() => {
+    return transactions.filter((tx) => {
+      const matchStatus = filtroStatus === 'all' || tx.status === filtroStatus;
+      const termo = busca.trim().toLowerCase();
+      const matchBusca =
+        !termo ||
+        tx.charge_point_id.toLowerCase().includes(termo) ||
+        tx.id_tag.toLowerCase().includes(termo);
+      return matchStatus && matchBusca;
+    });
+  }, [transactions, filtroStatus, busca]);
 
   if (loading && transactions.length === 0) {
     return <p className="p-6 text-slate-500">Carregando transações...</p>;
@@ -51,6 +73,45 @@ export default function Transactions() {
         </button>
       </header>
 
+      {/* Barra de filtros */}
+      <div className="bg-white rounded-xl shadow-sm p-4 mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
+        {/* Filtro por status */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Filter size={16} className="text-slate-400" />
+          {FILTROS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setFiltroStatus(key)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                filtroStatus === key
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Busca por carregador / tag */}
+        <div className="relative flex-1 sm:max-w-xs sm:ml-auto">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por carregador ou tag..."
+            className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+          />
+        </div>
+      </div>
+
+      {/* Contador */}
+      <p className="text-sm text-slate-500 mb-3">
+        Mostrando <span className="font-semibold text-slate-700">{transacoesFiltradas.length}</span> de{' '}
+        <span className="font-semibold text-slate-700">{transactions.length}</span> transações
+      </p>
+
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider">
@@ -65,7 +126,7 @@ export default function Transactions() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {transactions.map((tx) => {
+            {transacoesFiltradas.map((tx) => {
               const consumo = tx.meter_stop
                 ? `${((tx.meter_stop - tx.meter_start) / 1000).toFixed(2)} kWh`
                 : '—';
@@ -105,11 +166,12 @@ export default function Transactions() {
             })}
           </tbody>
         </table>
-        {transactions.length === 0 && (
-          <p className="p-6 text-center text-slate-500">Nenhuma transação encontrada.</p>
+        {transacoesFiltradas.length === 0 && (
+          <p className="p-6 text-center text-slate-500">
+            Nenhuma transação encontrada com os filtros atuais.
+          </p>
         )}
       </div>
     </div>
   );
 }
-

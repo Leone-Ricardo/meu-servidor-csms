@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ArrowLeftRight, Zap, Settings } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, Settings, Zap } from 'lucide-react';
 
 const menu = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
+  { to: '/settings', label: 'Configurações', icon: Settings },
 ];
 
 export default function Sidebar() {
   const [online, setOnline] = useState(false);
 
-  // Verifica se o backend está respondendo
   useEffect(() => {
     async function checarConexao() {
       try {
@@ -47,7 +47,7 @@ export default function Sidebar() {
           <NavLink
             key={to}
             to={to}
-            end
+            end={to === '/'}
             className={({ isActive }) =>
               `relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 isActive
@@ -58,7 +58,6 @@ export default function Sidebar() {
           >
             {({ isActive }) => (
               <>
-                {/* Barra de acento lateral */}
                 {isActive && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-500 rounded-r" />
                 )}
@@ -72,7 +71,6 @@ export default function Sidebar() {
 
       {/* Rodapé */}
       <div className="p-4 border-t border-slate-800 space-y-3">
-        {/* Status de conexão */}
         <div className="flex items-center gap-2 px-2 text-xs">
           <span
             className={`w-2 h-2 rounded-full ${
@@ -83,13 +81,6 @@ export default function Sidebar() {
             {online ? 'Backend online' : 'Backend offline'}
           </span>
         </div>
-
-        {/* Botão de configurações (visual) */}
-        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all">
-          <Settings size={16} />
-          Configurações
-        </button>
-
         <p className="text-xs text-slate-600 text-center pt-1">v1.0.0</p>
       </div>
     </aside>
