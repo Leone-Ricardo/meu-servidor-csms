@@ -9,3 +9,12 @@ export async function getTransactions() {
   }
   return response.json();
 }
+
+// Busca o total de carregadores cadastrados
+export async function getChargersCount() {
+  const response = await fetch(`${BASE_URL}/api/chargers/count`);
+  if (!response.ok) {
+    throw new Error(`Erro ao buscar carregadores: ${response.status}`);
+  }
+  return response.json();
+}

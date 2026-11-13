@@ -133,12 +133,11 @@ wss.on('connection', function connection(ws) {
 // 4. API REST mínima para o React consumir
 // ============================================
 server.on('request', async (req, res) => {
-  // CORS: permite o Vite (localhost:5173) acessar
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Responde ao preflight do navegador
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
@@ -155,6 +154,22 @@ server.on('request', async (req, res) => {
       res.end(JSON.stringify(result.rows));
     } catch (err) {
       console.error('Erro na rota /api/transactions:', err);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // Rota: conta os carregadores cadastrados
+  if (req.url === '/api/chargers/count' && req.method === 'GET') {
+    try {
+      const result = await pool.query(
+        'SELECT COUNT(*)::int AS total FROM charger_credentials'
+      );
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ total: result.rows[0].total }));
+    } catch (err) {
+      console.error('Erro na rota /api/chargers/count:', err);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     }
